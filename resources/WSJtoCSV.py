@@ -7,7 +7,7 @@
 
 ########### Parameters ###########
 
-rootdir = "/Users/charlesbean/Code/TEvA/Corpora/Testbed"
+rootdir = "/Users/charlesbean/Code/TEvA/Corpora/lcseg 3/corpora/wsj"
 
 outdir = "/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Extracted"
 
@@ -83,7 +83,8 @@ class ConvertedICMI(object):
                 else:
                     refFile.write(str(1) + '\n')
 
-
+        refFile.close()
+        outFile.close()
 
 
 def main():
