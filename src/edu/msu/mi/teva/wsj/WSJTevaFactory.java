@@ -24,9 +24,9 @@ import org.apache.log4j.Logger;
 
 public class WSJTevaFactory extends DefaultTevaFactory {
 
-    private static Logger log = Logger.getLogger(ICMITevaFactory.class);
+    private static Logger log = Logger.getLogger(WSJTevaFactory.class);
 
-    public ICMITevaFactory(TevaParameters params, Conversation conversation) {
+    public WSJTevaFactory(TevaParameters params, Conversation conversation) {
         super(params, conversation);
     }
 
@@ -98,6 +98,6 @@ public class WSJTevaFactory extends DefaultTevaFactory {
 
 
     public Tokenizer<String> getTokenizer() throws IOException {
-        return new ICMITokenizer(getMungers());
+        return new WSJTokenizer(getMungers());
     }
 }

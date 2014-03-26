@@ -1,15 +1,17 @@
 package edu.msu.mi.teva.wsj;
 
-import
+import edu.mit.cci.text.preprocessing.AlphaNumericTokenizer;
+import edu.mit.cci.text.preprocessing.CompositeMunger;
+import edu.mit.cci.text.preprocessing.Munger;
 /**
  * Created by charlesbean on 3/25/14.
  */
 public class WSJTokenizer extends AlphaNumericTokenizer {
-    public ICMITokenizer(Munger... mungers) {
+    public WSJTokenizer(Munger... mungers) {
         super(mungers);
     }
 
-    public ICMITokenizer(){
+    public WSJTokenizer(){
         super();
     }
 
