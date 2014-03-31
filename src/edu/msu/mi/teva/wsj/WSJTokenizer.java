@@ -11,13 +11,7 @@ public class WSJTokenizer extends AlphaNumericTokenizer {
         super(mungers);
     }
 
-    public WSJTokenizer(){
-        super();
-    }
-
     public String replace(String input) {
         return super.replace(input.replace("_",""));
     }
-
-
 }
