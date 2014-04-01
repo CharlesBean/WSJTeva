@@ -11,7 +11,6 @@ import edu.mit.cci.teva.engine.TevaParameters
 import edu.mit.cci.teva.model.Conversation
 import edu.mit.cci.teva.model.DiscussionThread
 import edu.mit.cci.teva.model.Post
-import edu.mit.cci.teva.util.TevaUtils
 import edu.mit.cci.text.windowing.Windowable
 import edu.mit.cci.util.U
 
@@ -86,9 +85,10 @@ class WSJRunner {
         }
     }
 
-    public static void run(){
+    public static void run(File inFile){
 
-        File input = U.getAnyFile("WSJ File", ".", 0)
+        //File input = U.getAnyFile("WSJ File", ".", 0)
+        File input = inFile
 
         Conversation c = new WSJRunner(input).conv
 
