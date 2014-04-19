@@ -5,15 +5,25 @@
 ##
 #############################################
 
-########### Parameters ###########
+########### Global Parameters ###########
 
-rootdir = "/Users/charlesbean/Code/TEvA/Corpora/lcseg 3/corpora/wsj"
+origin = "/Users/charlesbean/Code/TEvA/Corpora/lcseg 3/corpora/wsj" #THIS IS USED FOR RENAMING PURPOSES ONLY
 
-outdir = "/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Extracted"
 
-refdir = "/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Ref Files"
 
-##################################
+rootdir = "/Users/charlesbean/Code/TEvA/Corpora/Renamed/ReWSJ" #THIS IS WHAT THE SCRIPT WILL RUN ON (transforms files in this dir/subdirs)
+
+outdir = "/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Data/Extracted" #DIRECTORY FOR EXTRACTED FILES
+
+refdir = "/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Data/Ref Files" #DIRECTORY FOR REFERENCE FILES
+
+
+
+renamePath = "/Users/charlesbean/Code/TEvA/Corpora/Renamed/ReWSJ/" #DIRECTORY FOR RENAMED FILES (e.g. WSJ had .ref as suffix)
+
+extension = ".exWSJ" #NEW EXTENSION/SUFFIX FOR RENAMED FILES
+
+##########################################
 
 import os
 import sys
@@ -45,7 +55,7 @@ class ConvertedICMI(object):
             for file in files:
                 if file != ".DS_Store":
                     self.file = subdir + "/" + file
-                    self.process(outdir + "/" + file + ".csv", refdir + "/" + file + ".csv.ref")
+                    self.process(outdir + "/" + file + ".csv", refdir + "/" + file + ".ref")
 
     def process(self, outFilename, refFilename):
         id = 0
@@ -87,10 +97,23 @@ class ConvertedICMI(object):
         outFile.close()
 
 
+def rename_files(dir): #Yes this was necessary...
+    print "\n==========================\nRenaming: %s...\n" % dir
+    count = 1
+    for subdir, dirs, files in os.walk(rootdir):
+        for file in files:
+            if file != ".DS_Store":
+                os.rename(subdir+ "/"+ file, renamePath + str(count) + extension)
+                count += 1
+
+    print "\n==========================\nTotal files renamed: %d\n" % count
+
 def main():
+    #rename_files(rootdir) #UNCOMMENT TO RENAME FILES IN A DIRECTORY OR RENAME AND MOVE
     Converted = ConvertedICMI()
     Converted.__directory_check__(rootdir)
     Converted.iterate()
+
 
 if __name__ == '__main__':
     main()

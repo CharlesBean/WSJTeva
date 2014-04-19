@@ -99,7 +99,6 @@ class WSJRunner {
             CommunityModel model = new MemoryBasedRunner(c, tParams, new WSJTevaFactory(tParams, c)).process();
             //TevaUtils.serialize(new File(tParams.getWorkingDirectory() + "/CommunityOuput." + c.getName() + "." + tParams.getFilenameIdentifier() + ".xml"), model, CommunityModel.class);
             //printSimpleOutput(model, c)
-            println "hello"
         }
     }
 
