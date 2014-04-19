@@ -14,9 +14,12 @@ class WSJImplementation {
     //Setting a couple of different parameters (based off of ICMI currently)
     def params = [[window: 50, delta: 10], [window: 100, delta: 10], [window: 100, delta: 20], [window: 120, delta:30]]
 
-    //Implementing the WSJ module over a directory of corpora ("Data") - it
-    //      should consist of one folder of .csv files ("Extracted"), and \
-    //      one folder of .ref files ("Ref Files")
+    //Regex expression for file prefixes (1.exWSJ.ref/1.exWSJ.csv)
+    def fileRegex = ~/(.*)(?:.csv|.ref)/  //Full name at [0][0]; Name without extension at [0][1]
+
+    /*Implementing the WSJ module over a directory of corpora ("Data") - it
+         should consist of one folder of .csv files ("Extracted"), and \
+         one folder of .ref files ("Ref Files")*/
     WSJImplementation(File dir){
 
         //Creating a map of processes
@@ -28,8 +31,15 @@ class WSJImplementation {
             print("---"+subdir.getName()+"---"+"\n") //REMOVE
             if (subdir.isDirectory()){
                 subdir.eachFileMatch(FileType.FILES, ~/.*(?:csv|ref)/) { f ->
-                    def prefix = (f.getName() =~ /([^\.]+)/)[0][0]
-                    print(prefix+"\n")
+                    def prefix = (f.getName() =~ fileRegex)[0][1] //CHANGE THIS TO GET THE RENAMED EXTENSION
+                    //print(prefix+"\n")
+                    if (!process_map[prefix]) { //If prefix isnt within map, add key (value a map)
+                        process_map[prefix] = [:]
+                    }
+                    if (f.getName().endsWith("ref")) {
+                        process_map[prefix]["ref"] = f
+                        print (process_map[prefix]["ref"])
+                    }
                     count += 1
                 }
             }

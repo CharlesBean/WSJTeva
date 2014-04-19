@@ -109,7 +109,7 @@ def rename_files(dir): #Yes this was necessary...
     print "\n==========================\nTotal files renamed: %d\n" % count
 
 def main():
-    #rename_files(rootdir) #UNCOMMENT TO RENAME FILES IN A DIRECTORY OR RENAME AND MOVE
+    #rename_files(rootdir)
     Converted = ConvertedICMI()
     Converted.__directory_check__(rootdir)
     Converted.iterate()
