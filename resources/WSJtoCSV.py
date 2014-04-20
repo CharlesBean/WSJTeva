@@ -24,8 +24,8 @@
             -"lcseg 3"
                 -"corpora"
                     -"wsj"                      <------ originalDir
-            -"Renamed" for renamed files
-                -"ReWSJ" specific WSJ           <------ roodir
+            -"Renamed"
+                -"ReWSJ"                        <------ rootdir
 
 """
 
