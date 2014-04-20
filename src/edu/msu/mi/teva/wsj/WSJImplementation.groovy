@@ -27,7 +27,7 @@ class WSJImplementation {
 
     //For systematic checking
     def passed(int count = 0){
-        printf("--PASSED %d FILES--\n", count)
+        printf("--PASSED %d REF AND CSV FILES--\n", count)
     }
     /*******************************************************/
 
@@ -87,6 +87,7 @@ class WSJImplementation {
      * @return
      */
     def run(Map data){
+
         File out = new File("WSJOutput.csv") //Final output file
 
         out.withWriterAppend {
@@ -108,9 +109,15 @@ class WSJImplementation {
      */
     def runInstance(String name, File data, File ref, File out){
 
-        Conversation c = initConversation(data)
+        //Creating conversation (per file)
+        Conversation conv = initConversation(data)
 
-        List<Integer> segs = segmentationData(ref, c)
+        //Creating segmentation data
+        List<Integer> segs = segmentationData(ref, conv)
+
+        //Loading parameters
+        TevaParameters tevaParams = new TevaParameters(System.getResourceAsStream("/wsj.teva.properties"))
+
 
     }
 
@@ -123,7 +130,7 @@ class WSJImplementation {
     def initConversation(File data){
 
         //Parameters are (columns, filename, filestream, delimiter (tab), textQual)
-        return new CsvBasedConversation(["id", "replyTo", "start", "author", "text"] as String[], data.getName(), data.newInputStream(), 't' as char, false) {
+        return new CsvBasedConversation(["id", "replyTo", "start", "author", "text"] as String[], data.getName(), data.newInputStream(), '\t' as char, false) {
             public Date processDate(CsvBasedConversation.Column field, CsvReader reader) {
                 new Date(((processString(field, reader) as float) * 1000f) as long)
             }
@@ -137,15 +144,94 @@ class WSJImplementation {
      * @param c
      * @return
      */
-    def segmentationData(File ref, Conversation c){
-        def segdata = [] //array of segmentation data
+    def segmentationData(File ref, Conversation conv){
+
+        //array of segmentation data
+        def segdata = []
+
+        //List of integers of same data
+        List<Integer> refNumbers = []
+
+        //Add to array from reference file
         ref.readLines().each { line ->
-            def m = line =~ /([\d\.]+)/
-            print m
+
+            //Each line should be a 1 or 0 - this catches all digits
+            def seg = line =~ /([\d]+)/ //Matcher instance
+
+            //If match is 1 or more chars, add the 1st char as long
+            if (seg.size() > 0) {
+                segdata << Long.parseLong((seg[0][0] as String).replaceAll(/\./,""))
+            }
         }
+
+        //Iterate threads
+        conv.allThreads.each { thread ->
+
+            //Posts
+            def sidx = 0
+
+            thread.posts.each { post ->
+
+                if (sidx < segdata.size() && post.time.time >= segdata[sidx]) {
+                    sidx++
+                    refNumbers << 1
+                }
+
+                else {
+                    refNumbers << 0
+                }
+            }
+        }
+
+        refNumbers
 
     }
 
+    /**
+     * Calculates the pK value of two lists (commonality) [COPIED]
+     *
+     * @param ref
+     * @param hyp
+     * @param boundary
+     * @return
+     */
+    def static Map pk(List<Integer> ref, List<Integer> hyp, boundary = 1) {
+        def k = Math.round(ref.size() / (ref.count(boundary) * 2)) as int
+        println "K is " + k
+        def nConsidered = ref.size() - k - 1
+        def nSameRef = 0f
+        def nFalseAlarm = 0f
+        def nMiss = 0
+
+        (0..nConsidered).each { i ->
+            def bSameRefSeg = false
+            def bSameHypSeg = false
+
+            if (!(boundary in ref[(i + 1)..(i + k)])) {
+                nSameRef += 1
+                bSameRefSeg = true
+
+            }
+            if (!(boundary in hyp[(i + 1)..(i + k)])) {
+                bSameHypSeg = true
+            }
+
+            if (!bSameRefSeg && bSameHypSeg) {
+                nMiss += 1
+            }
+            if (bSameRefSeg && !bSameHypSeg) {
+                nFalseAlarm += 1
+            }
+        }
+
+        def probSameRef = nSameRef / nConsidered
+        def probDiffRef = 1 - probSameRef
+        def probMiss = nMiss / nConsidered
+        def probFalseAlarm = nFalseAlarm / nConsidered
+
+
+        return [pMiss: probMiss, pFalseAlarm: probFalseAlarm, pk: probMiss * probDiffRef + probFalseAlarm * probSameRef]
+    }
 
     static void main(String[] args){
         //File f = U.getAnyFile("WSJ Directory", ".", JFileChooser.DIRECTORIES_ONLY)

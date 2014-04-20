@@ -3,31 +3,61 @@
 ## Charles Bean
 ## 3/25/14
 ##
+##
 #############################################
+
+"""
+-----> PLEASE READ!!!
+    Please run with Python 2.7.
+
+    Also, please use the "rename_files" function to rename the file extension (simply uncomment below). The
+        extensions ".ref" or ".csv" are not suitable for the TEvA module.
+
+    My directory structure:
+        "Corpora"
+            -"Converted"
+                -"WSJ"
+                    -"Data"
+                        -"Extracted"            <------ outdir
+                        -"Ref Files"            <------ refdir
+                    -"Extra"
+            -"lcseg 3"
+                -"corpora"
+                    -"wsj"                      <------ originalDir
+            -"Renamed folder" for renamed files
+                -"ReWSJ" specific WSJ           <------ roodir
+
+"""
 
 ########### Global Parameters ###########
 
-origin = "/Users/charlesbean/Code/TEvA/Corpora/lcseg 3/corpora/wsj" #THIS IS USED FOR RENAMING PURPOSES ONLY
+"""Ouput"""
+
+#Directory the script will operate on
+rootdir = "/Users/charlesbean/Code/TEvA/Corpora/Renamed/ReWSJ/"
+
+#Directory data will be outputted to (.csv)
+outdir = "/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Data/Extracted/"
+
+#Directory reference files will be outputted to (.ref)
+refdir = "/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Data/Ref Files/"
 
 
 
-rootdir = "/Users/charlesbean/Code/TEvA/Corpora/Renamed/ReWSJ" #THIS IS WHAT THE SCRIPT WILL RUN ON (transforms files in this dir/subdirs)
+"""Renaming"""
 
-outdir = "/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Data/Extracted" #DIRECTORY FOR EXTRACTED FILES
+#Copies files from this directory to "rootdir" - must uncomment function "rename_files"
+originalDir = "/Users/charlesbean/Code/TEvA/Corpora/lcseg 3/corpora/wsj/"
 
-refdir = "/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Data/Ref Files" #DIRECTORY FOR REFERENCE FILES
-
-
-
-renamePath = "/Users/charlesbean/Code/TEvA/Corpora/Renamed/ReWSJ/" #DIRECTORY FOR RENAMED FILES (e.g. WSJ had .ref as suffix)
-
-extension = ".exWSJ" #NEW EXTENSION/SUFFIX FOR RENAMED FILES
+#New extension (for rename_files function)
+extension = ".exWSJ" #New extension/suffix for renaming files
 
 ##########################################
 
 import os
 import sys
 import string
+import shutil
 
 __author__ = 'charlesbean'
 
@@ -55,7 +85,7 @@ class ConvertedICMI(object):
             for file in files:
                 if file != ".DS_Store":
                     self.file = subdir + "/" + file
-                    self.process(outdir + "/" + file + ".csv", refdir + "/" + file + ".ref")
+                    self.process(outdir + file + ".csv", refdir + file + ".ref")
 
     def process(self, outFilename, refFilename):
         id = 0
@@ -96,20 +126,47 @@ class ConvertedICMI(object):
         refFile.close()
         outFile.close()
 
+def copy_rename(old_file_name, new_file_name):
+    src_dir= os.curdir
+    dst_dir= os.path.join(os.curdir , "subfolder")
+    src_file = os.path.join(src_dir, old_file_name)
+    shutil.copy(src_file,dst_dir)
 
-def rename_files(dir): #Yes this was necessary...
-    print "\n==========================\nRenaming: %s...\n" % dir
-    count = 1
-    for subdir, dirs, files in os.walk(rootdir):
+    dst_file = os.path.join(dst_dir, old_file_name)
+    new_dst_file_name = os.path.join(dst_dir, new_file_name)
+    os.rename(dst_file, new_dst_file_name)
+
+def rename_files(dir): #Copy files to rootdir, and rename (according to extension)
+
+    """rootdir is the rename destination directory (for some reason the iteration through
+    subdirectories is weird but shouldnt be worried about)"""
+
+    #total file count (for WSJ should be 500)
+    total = 0
+
+    #COPY and RENAME
+    print "\n==========================\nCopying files from {} to {}...\n".format(originalDir, rootdir)
+
+    for subdir, dirs, files in os.walk(dir):
         for file in files:
-            if file != ".DS_Store":
-                os.rename(subdir+ "/"+ file, renamePath + str(count) + extension)
-                count += 1
+            if ((file != ".DS_Store") and (file != "CVS") and (file[-4:] == (".ref"))):
+                total += 1
+                origName = file #saving original name for printing
 
-    print "\n==========================\nTotal files renamed: %d\n" % count
+                shutil.copy(subdir + "/" + file, rootdir)
+
+                os.rename(rootdir + file, rootdir + str(total) + extension)
+
+                print "\tCopied file: {} to \n\t\t {}".format(file, rootdir)
+                print "\t\t\t and renamed it to: {} ".format((str(total) + extension))
+
+    print "\n============ Total files copied and renamed: %d ==============\n" % total
+
+
+
 
 def main():
-    #rename_files(rootdir)
+    #rename_files(originalDir)
     Converted = ConvertedICMI()
     Converted.__directory_check__(rootdir)
     Converted.iterate()
