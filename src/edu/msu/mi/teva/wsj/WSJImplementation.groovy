@@ -3,12 +3,17 @@ package edu.msu.mi.teva.wsj
 import com.csvreader.CsvReader
 import edu.mit.cci.adapters.csv.CsvBasedConversation
 import edu.mit.cci.teva.MemoryBasedRunner
+import edu.mit.cci.teva.engine.Community
 import edu.mit.cci.teva.engine.CommunityModel
+import edu.mit.cci.teva.engine.ConversationChunk
 import edu.mit.cci.teva.engine.TevaParameters
 import edu.mit.cci.teva.model.Conversation
+import edu.mit.cci.teva.model.Post
 import edu.mit.cci.teva.util.TevaUtils
+import edu.mit.cci.text.windowing.Windowable
 import groovy.io.FileType
 import edu.mit.cci.util.U
+import org.apache.commons.math3.analysis.interpolation.LoessInterpolator
 
 import javax.swing.JFileChooser
 
@@ -116,9 +121,37 @@ class WSJImplementation {
         List<Integer> segs = segmentationData(ref, conv)
 
         //Loading parameters
-        TevaParameters tevaParams = new TevaParameters(System.getResourceAsStream("/wsj.teva.properties"))
+        TevaParameters tevaParams = new TevaParameters(System.getResourceAsStream("/wsj.teva.properties"));
 
+        //Getting working directory (creating base) from TevaParameters
+        File base = new File(tevaParams.getWorkingDirectory())
 
+        params.eachWithIndex{ param, index ->
+
+            File workingDir = createWorkingDirectory(base, name, index)
+
+            new File(workingDir, "params.txt").withWriterAppend {
+                it.println(param)
+            }
+
+            //Setting parameters
+            tevaParams.setWorkingDirectory(workingDir.absolutePath)
+            tevaParams.setWindowSize(param.window)
+            tevaParams.setWindowDelta(param.delta)
+
+            //Creating community model
+            CommunityModel model = new MemoryBasedRunner(conv, tevaParams, new WSJTevaFactory(tevaParams, conv)).process();
+
+            //gets slow here
+            //Calculations
+            TevaUtils.serialize(new File(tevaParams.getWorkingDirectory() + "/${conv.getName()}.${tevaParams.getFilenameIdentifier()}.xml"), model, CommunityModel.class);
+
+            //Calculating pK
+            def result = pk(segs, segment(model, conv))
+            out.withWriterAppend {
+                it.println("${name},${param.window},${param.delta},${result.pMiss},${result.pFalseAlarm},${result.pk}")
+            }
+        }
     }
 
     /**
@@ -231,6 +264,108 @@ class WSJImplementation {
 
 
         return [pMiss: probMiss, pFalseAlarm: probFalseAlarm, pk: probMiss * probDiffRef + probFalseAlarm * probSameRef]
+    }
+
+    /**
+     * Creates the working directory
+     *
+     * @param base
+     * @param name
+     * @param i
+     * @return
+     */
+    static File createWorkingDirectory(File base, String name, int i) {
+        File n = new File(base, "$name.$i")
+        if (!n.exists()) {
+            n.mkdir()
+        } else {
+            U.cleanDirectory(n)
+        }
+        n
+    }
+
+    /**
+     * Segmenting
+     *
+     * @param model
+     * @param conversation
+     * @return
+     */
+    def static List segment(CommunityModel model, Conversation conversation) {
+
+        def assignments = assign(model)
+        smooth(conversation, assignments)
+
+        def segs = []
+        conversation.allThreads.each { t ->
+            def lastid = -1
+            t.posts.each { p ->
+                if (assignments[p.postid]) {
+                    def lidx = -1
+                    assignments[p.postid].eachWithIndex { e, i ->
+                        if (lidx < 0 || e > assignments[p.postid][lidx]) {
+                            lidx = i
+                        }
+                    }
+                    segs << ((lastid != lidx) ? 1 : 0)
+                    lastid = lidx
+                } else {
+                    segs << 0
+                }
+            }
+        }
+        segs
+    }
+
+    /**
+     *
+     * @param model
+     * @return
+     */
+    def static Map assign(CommunityModel model) {
+        Map result = new HashMap()
+
+        for (Community c:model.communities)  {
+            c.assignments.each { ConversationChunk chunk ->
+                chunk.messages.each { Windowable w ->
+                    if (!result[w.id]) {
+                        result[w.id] = new Object[model.communities.size()]
+                        Arrays.fill(result[w.id], 0f)
+                    }
+                    result[w.id][c.id as int] = chunk.coverage
+                }
+            }
+        }
+        result
+    }
+
+    /**
+     * Loess smoother
+     *
+     * @param conversation
+     * @param assignments
+     * @param smooth
+     * @return
+     */
+    def static smooth(Conversation conversation, Map assignments, smooth = 0.3d) {
+        LoessInterpolator loess = new LoessInterpolator(smooth, 1)
+        def x = []
+        def length = assignments.values().first().length
+        (0..<length).each { idx ->
+            conversation.allThreads.each { t ->
+                def data = t.posts.collect { p ->
+                    if (x.size() < t.posts.size()) {
+                        x << ((x && x.last() >= p.time.time) ? (x.last() + 1d) : (p.time.time as double))
+                    }
+                    assignments[p.postid] ? assignments[p.postid][idx] as double : 0d
+                } as double[]
+                data = loess.smooth(x as double[], data)
+                t.posts.eachWithIndex { Post p, int i ->
+                    if (assignments[p.postid]) assignments[p.postid][idx] = data[i]
+
+                }
+            }
+        }
     }
 
     static void main(String[] args){
