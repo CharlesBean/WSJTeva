@@ -61,7 +61,7 @@ import shutil
 
 __author__ = 'charlesbean'
 
-class ConvertedICMI(object):
+class ConvertedWSJ(object):
 
     def __init__(self):
         self.file = ""
@@ -167,7 +167,7 @@ def rename_files(dir): #Copy files to rootdir, and rename (according to extensio
 
 def main():
     #rename_files(originalDir)
-    Converted = ConvertedICMI()
+    Converted = ConvertedWSJ()
     Converted.__directory_check__(rootdir)
     Converted.iterate()
 
