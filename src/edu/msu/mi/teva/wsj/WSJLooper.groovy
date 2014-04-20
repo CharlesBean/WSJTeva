@@ -8,6 +8,8 @@ import edu.msu.mi.teva.wsj.WSJRunner
  */
 class WSJLooper {
 
+    //Use WSJImplementation
+
     public static void run(){
         def list = []
 

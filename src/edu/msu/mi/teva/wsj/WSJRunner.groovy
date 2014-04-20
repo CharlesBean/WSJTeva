@@ -21,6 +21,8 @@ class WSJRunner {
 
     Conversation conv
 
+    //Verbatim from ICMI. Was testing ICMI on WSJ to see output
+
     public WSJRunner(File file) {
         conv = new CsvBasedConversation(["id", "replyTo", "start", "author", "text"] as String[], file.getName(), file.newInputStream(), '\t' as char, false) {
             public Date processDate(CsvBasedConversation.Column field, CsvReader reader) {
