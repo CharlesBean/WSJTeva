@@ -1,5 +1,6 @@
 package edu.msu.mi.teva.wsj
 
+import edu.mit.cci.teva.model.Conversation
 import groovy.io.FileType
 import edu.mit.cci.util.U
 
@@ -18,7 +19,7 @@ class WSJImplementation {
     def fileRegex = ~/(.*)(?:.csv|.ref)/  //Full name at [0][0]; Name without extension at [0][1]
 
     /*Implementing the WSJ module over a directory of corpora ("Data") - it
-         should consist of one folder of .csv files ("Extracted"), and \
+         should consist of one folder of .csv files ("Extracted"), and
          one folder of .ref files ("Ref Files")*/
     WSJImplementation(File dir){
 
@@ -26,64 +27,53 @@ class WSJImplementation {
         def process_map = [:]
         int count = 0
 
-        //Iterate through subdirectories, then files
+        /* Iterate through subdirectories, then files. Creates
+            a map that looks like [FILE: [data (.csv) file, reference (.ref) file], FILE2: [data, ref], ...etc]
+         */
         dir.eachFile { subdir ->
-            print("---"+subdir.getName()+"---"+"\n") //REMOVE
+
+            //Two subdirectories of .csv or .ref files (default from "WSJtoCSV.py")
             if (subdir.isDirectory()){
-                subdir.eachFileMatch(FileType.FILES, ~/.*(?:csv|ref)/) { f ->
-                    def prefix = (f.getName() =~ fileRegex)[0][1] //CHANGE THIS TO GET THE RENAMED EXTENSION
-                    //print(prefix+"\n")
-                    if (!process_map[prefix]) { //If prefix isnt within map, add key (value a map)
+                subdir.eachFileMatch(FileType.FILES, ~/.*(?:csv|ref)/) { f -> //Each FILE that ends in .csv or .ref
+                    def prefix = (f.getName() =~ fileRegex)[0][1]
+                    if (!process_map[prefix]) { //If prefix isnt within map, add key (value a map of data and ref)
                         process_map[prefix] = [:]
                     }
-                    if (f.getName().endsWith("ref")) {
+                    if (f.getName().endsWith("ref")) { //If the file extension is .ref, add to submap [1]
                         process_map[prefix]["ref"] = f
-                        print (process_map[prefix]["ref"])
+
+                    }
+                    else {
+                        process_map[prefix]["dat"] = f //If .csv, add to submap [0]
                     }
                     count += 1
                 }
             }
-
         }
+        process_map.keySet().retainAll(process_map.findResults { (it.value["ref"] && it.value["dat"]) ? it.key : null })
+
         passed(count)
-        //println ("Check at %d\n", getLineNumber())
-        /*def process = [:]
-        dir.eachFileMatch(FileType.FILES, ~/B.*(?:csv|ref)/) { f ->
-            println("CHECK")
-            def prefix = (f.getName() =~ /([^\.]+)/)[0][0]
-            if (!process[prefix]){
-                process[prefix] = [:]
-            }
-            if (f.getName().endsWith("ref")){
-                process[prefix]["ref"] = f
-            }
-            else{
-                process[prefix]["dat"] = f
-            }
-            print(process)
-        }
 
-        process.keySet().retainAll(process.findResults { (it.value["ref"] && it.value["dat"]) ? it.key : null})
-        run(process)
-        */
+        run(process_map)
     }
 
+    //For systematic checking
     def passed(int count = 0){
         printf("--PASSED %d FILES--\n", count)
     }
 
     def run(Map data){
-        File out = new File("WSJOutput.csv")
+        File out = new File("WSJOutput.csv") //Final output file
         out.withWriterAppend {
-            it.println("corpus, window, delta, pmiss, pfa, pk")
+            it.println("corpus, window, delta, pmiss, pfa, pk") //Write columns
         }
-        data.each { String k, v ->
+        data.each { String k, v -> //For each file prefix (k), and each ref/csv file (v[csv] or v[ref])
             runInstance(k, v["dat"] as File, v["ref"] as File, out)
         }
     }
 
     def runInstance(String name, File data, File ref, File out){
-        pass
+
     }
 
     static void main(String[] args){
