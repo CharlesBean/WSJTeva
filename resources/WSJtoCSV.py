@@ -46,7 +46,7 @@ refdir = "/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Data/Ref Files/"
 
 """Renaming"""
 
-#Copies files from this directory to "rootdir" - must uncomment function "rename_files"
+#Copies files from this directory to "rootdir" - gets rid of ".ref" extension
 originalDir = "/Users/charlesbean/Code/TEvA/Corpora/lcseg 3/corpora/wsj/"
 
 #New extension (for rename_files function)
@@ -166,7 +166,7 @@ def rename_files(dir): #Copy files to rootdir, and rename (according to extensio
 
 
 def main():
-    #rename_files(originalDir)
+    rename_files(originalDir)
     Converted = ConvertedWSJ()
     Converted.__directory_check__(rootdir)
     Converted.iterate()
