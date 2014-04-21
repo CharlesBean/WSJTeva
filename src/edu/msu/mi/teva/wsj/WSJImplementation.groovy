@@ -369,8 +369,8 @@ class WSJImplementation {
     }
 
     static void main(String[] args){
-        //File f = U.getAnyFile("WSJ Directory", ".", JFileChooser.DIRECTORIES_ONLY)
-        File WSJdir = new File("/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Data")
+        File WSJdir = U.getAnyFile("WSJ Directory", ".", JFileChooser.DIRECTORIES_ONLY)
+        //File WSJdir = new File("/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Data")
         if (!WSJdir.isDirectory()){
             println "Whoops! Not a directory"
         }
