@@ -10,8 +10,10 @@
 -----> PLEASE READ!!!
     Please run with Python 2.7.
 
+    Please add a forward-slash at the end of each directory. (See below)
+
     Also, please use the "rename_files" function to rename the file extension (simply uncomment below). The
-        extensions ".ref" or ".csv" are not suitable for the TEvA module.
+        extensions ".ref" or ".csv" are not suitable for the TEvA module (it converts them itself).
 
     My directory structure:
         "Corpora"
@@ -58,6 +60,7 @@ import os
 import sys
 import string
 import shutil
+import re
 
 __author__ = 'charlesbean'
 
@@ -126,16 +129,6 @@ class ConvertedWSJ(object):
         refFile.close()
         outFile.close()
 
-def copy_rename(old_file_name, new_file_name):
-    src_dir= os.curdir
-    dst_dir= os.path.join(os.curdir , "subfolder")
-    src_file = os.path.join(src_dir, old_file_name)
-    shutil.copy(src_file,dst_dir)
-
-    dst_file = os.path.join(dst_dir, old_file_name)
-    new_dst_file_name = os.path.join(dst_dir, new_file_name)
-    os.rename(dst_file, new_dst_file_name)
-
 def rename_files(dir): #Copy files to rootdir, and rename (according to extension)
 
     """rootdir is the rename destination directory (for some reason the iteration through
@@ -166,7 +159,7 @@ def rename_files(dir): #Copy files to rootdir, and rename (according to extensio
 
 
 def main():
-    rename_files(originalDir)
+    #rename_files(originalDir)
     Converted = ConvertedWSJ()
     Converted.__directory_check__(rootdir)
     Converted.iterate()

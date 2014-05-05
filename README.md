@@ -50,4 +50,5 @@ TEvA
 
 References
 -------------
+
 [1] Michael Galley, et. al., "Discourse Segmentation of Multi-Party Conversation", Proceedings of the 41st Annual Meeting of the Association for Computational Linguistics, July 2003, pp. 562-569.
