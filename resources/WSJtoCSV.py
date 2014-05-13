@@ -36,20 +36,20 @@
 """Ouput"""
 
 #Directory the script will operate on
-rootdir = "/Users/charlesbean/Code/TEvA/Corpora/Renamed/ReWSJ/"
+rootdir = "/Users/josh/@Projects/KNOWLEDGE_FLOW/Validation/WSJ/input/"
 
 #Directory data will be outputted to (.csv)
-outdir = "/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Data/Extracted/"
+outdir = "/Users/josh/@Projects/KNOWLEDGE_FLOW/Validation/WSJ/output/data/"
 
 #Directory reference files will be outputted to (.ref)
-refdir = "/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Data/Ref Files/"
+refdir = "/Users/josh/@Projects/KNOWLEDGE_FLOW/Validation/WSJ/output/ref/"
 
 
 
 """Renaming"""
 
 #Copies files from this directory to "rootdir" - gets rid of ".ref" extension
-originalDir = "/Users/charlesbean/Code/TEvA/Corpora/lcseg 3/corpora/wsj/"
+originalDir = "/Users/josh/@Projects/KNOWLEDGE_FLOW/lcseg/corpora/wsj/"
 
 #New extension (for rename_files function)
 extension = ".exWSJ" #New extension/suffix for renaming files
@@ -146,9 +146,9 @@ def rename_files(dir): #Copy files to rootdir, and rename (according to extensio
                 total += 1
                 origName = file #saving original name for printing
 
-                shutil.copy(subdir + "/" + file, rootdir)
+                shutil.copy(subdir + "/" + file, rootdir + str(total) + extension)
 
-                os.rename(rootdir + file, rootdir + str(total) + extension)
+                //os.rename(rootdir + file, rootdir + str(total) + extension)
 
                 print "\tCopied file: {} to \n\t\t {}".format(file, rootdir)
                 print "\t\t\t and renamed it to: {} ".format((str(total) + extension))
@@ -159,7 +159,7 @@ def rename_files(dir): #Copy files to rootdir, and rename (according to extensio
 
 
 def main():
-    #rename_files(originalDir)
+    rename_files(originalDir)
     Converted = ConvertedWSJ()
     Converted.__directory_check__(rootdir)
     Converted.iterate()

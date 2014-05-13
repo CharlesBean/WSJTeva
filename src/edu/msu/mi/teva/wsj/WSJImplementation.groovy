@@ -13,6 +13,7 @@ import edu.mit.cci.teva.util.TevaUtils
 import edu.mit.cci.text.windowing.Windowable
 import groovy.io.FileType
 import edu.mit.cci.util.U
+import groovy.util.logging.Log4j
 import org.apache.commons.math3.analysis.interpolation.LoessInterpolator
 
 import javax.swing.JFileChooser
@@ -21,22 +22,32 @@ import javax.swing.JFileChooser
 /**
  * Created by charlesbean on 4/18/14.
  */
+@Log4j
 class WSJImplementation {
 
-    /*******************************************************/
+    /** *****************************************************/
     //Setting a couple of different parameters (based off of ICMI currently)
-    def params = [[window: 50, delta: 10], [window: 100, delta: 10], [window: 100, delta: 20], [window: 120, delta:30]]
+    def params = [[fixed_clique_size: 3, minimum_link_weight: 0.85],
+            [fixed_clique_size: 3, minimum_link_weight: 0.9],
+            [fixed_clique_size: 4, minimum_link_weight: 0.85],
+            [fixed_clique_size: 4, minimum_link_weight: 0.9],
+            [fixed_clique_size: 5, minimum_link_weight: 0.85],
+            [fixed_clique_size: 5, minimum_link_weight: 0.9],
+            [fixed_clique_size: 6, minimum_link_weight: 0.85],
+            [fixed_clique_size: 6, minimum_link_weight: 0.9]]
+
+    def headers = params.collect() { m ->
+        m.keySet()
+    }.flatten() as Set
 
     //Regex expression for file prefixes (1.exWSJ.ref/1.exWSJ.csv)
     def fileRegex = ~/(.*)(?:.csv|.ref)/  //Full name at [0][0]; Name without extension at [0][1]
 
     //For systematic checking
-    def passed(int count = 0){
+    def passed(int count = 0) {
         printf("--PASSED %d REF AND CSV FILES--\n", count)
     }
-    /*******************************************************/
-
-
+    /** *****************************************************/
 
     /**
      * Implementing the WSJ module over a directory of corpora ("Data") - it
@@ -45,7 +56,7 @@ class WSJImplementation {
      *
      * @param dir
      */
-    WSJImplementation(File dir){
+    WSJImplementation(File dir) {
 
         //Creating a map of processes/count for total files
         def process_map = [:]
@@ -57,7 +68,7 @@ class WSJImplementation {
         dir.eachFile { subdir ->
 
             //Two subdirectories of .csv or .ref files (default from "WSJtoCSV.py")
-            if (subdir.isDirectory()){
+            if (subdir.isDirectory()) {
                 subdir.eachFileMatch(FileType.FILES, ~/.*(?:csv|ref)/) { f -> //Each FILE that ends in .csv or .ref
                     def prefix = (f.getName() =~ fileRegex)[0][1]
 
@@ -68,9 +79,7 @@ class WSJImplementation {
                     if (f.getName().endsWith("ref")) { //If the file extension is .ref, add to submap [1]
                         process_map[prefix]["ref"] = f
 
-                    }
-
-                    else {
+                    } else {
                         process_map[prefix]["data"] = f //If .csv, add to submap [0]
                     }
 
@@ -78,7 +87,9 @@ class WSJImplementation {
                 }
             }
         }
-        process_map.keySet().retainAll(process_map.findResults { (it.value["ref"] && it.value["data"]) ? it.key : null })
+        process_map.keySet().retainAll(process_map.findResults {
+            (it.value["ref"] && it.value["data"]) ? it.key : null
+        })
 
         passed(count)
 
@@ -91,12 +102,14 @@ class WSJImplementation {
      * @param data
      * @return
      */
-    def run(Map data){
+    def run(Map data) {
 
         File out = new File("WSJOutput.csv") //Final output file
 
         out.withWriterAppend {
-            it.println("corpus, window, delta, pmiss, pfa, pk") //Write columns
+            it.println "corpus,${headers.join(",")},pmiss,pfa,pk"
+
+
         }
 
         data.each { String k, v -> //For each file prefix (k), and each ref/csv file (v[csv] or v[ref])
@@ -112,7 +125,7 @@ class WSJImplementation {
      * @param ref
      * @param out
      */
-    def runInstance(String name, File data, File ref, File out){
+    def runInstance(String name, File data, File ref, File out) {
 
         //Creating conversation (per file)
         Conversation conv = initConversation(data)
@@ -126,7 +139,7 @@ class WSJImplementation {
         //Getting working directory (creating base) from TevaParameters
         File base = new File(tevaParams.getWorkingDirectory())
 
-        params.eachWithIndex{ param, index ->
+        params.eachWithIndex { param, index ->
 
             File workingDir = createWorkingDirectory(base, name, index)
 
@@ -136,8 +149,15 @@ class WSJImplementation {
 
             //Setting parameters
             tevaParams.setWorkingDirectory(workingDir.absolutePath)
-            tevaParams.setWindowSize(param.window)
-            tevaParams.setWindowDelta(param.delta)
+
+            param.each { k, v ->
+
+                if (k in tevaParams.stringPropertyNames()) {
+                    tevaParams.setProperty(k, v as String)
+                    log.info("Setting $k to $v")
+                }
+
+            }
 
             //Creating community model
             CommunityModel model = new MemoryBasedRunner(conv, tevaParams, new WSJTevaFactory(tevaParams, conv)).process();
@@ -149,7 +169,7 @@ class WSJImplementation {
             //Calculating pK
             def result = pk(segs, segment(model, conv))
             out.withWriterAppend {
-                it.println("${name},${param.window},${param.delta},${result.pMiss},${result.pFalseAlarm},${result.pk}")
+                it.println "${name},${headers.collect() { tevaParams.getProperty(it) }.join(",")},${result.pMiss},${result.pFalseAlarm},${result.pk}"
             }
         }
     }
@@ -160,7 +180,7 @@ class WSJImplementation {
      * @param data
      * @return
      */
-    def initConversation(File data){
+    def initConversation(File data) {
 
         //Parameters are (columns, filename, filestream, delimiter (tab), textQual)
         return new CsvBasedConversation(["id", "replyTo", "start", "author", "text"] as String[], data.getName(), data.newInputStream(), '\t' as char, false) {
@@ -177,7 +197,7 @@ class WSJImplementation {
      * @param c
      * @return
      */
-    def segmentationData(File ref, Conversation conv){
+    def segmentationData(File ref, Conversation conv) {
 
         //array of segmentation data
         def segdata = []
@@ -193,7 +213,7 @@ class WSJImplementation {
 
             //If match is 1 or more chars, add the 1st char as long
             if (seg.size() > 0) {
-                segdata << Long.parseLong((seg[0][0] as String).replaceAll(/\./,""))
+                segdata << Long.parseLong((seg[0][0] as String).replaceAll(/\./, ""))
             }
         }
 
@@ -208,9 +228,7 @@ class WSJImplementation {
                 if (sidx < segdata.size() && post.time.time >= segdata[sidx]) {
                     sidx++
                     refNumbers << 1
-                }
-
-                else {
+                } else {
                     refNumbers << 0
                 }
             }
@@ -325,7 +343,7 @@ class WSJImplementation {
     def static Map assign(CommunityModel model) {
         Map result = new HashMap()
 
-        for (Community c:model.communities)  {
+        for (Community c : model.communities) {
             c.assignments.each { ConversationChunk chunk ->
                 chunk.messages.each { Windowable w ->
                     if (!result[w.id]) {
@@ -368,13 +386,12 @@ class WSJImplementation {
         }
     }
 
-    static void main(String[] args){
+    static void main(String[] args) {
         File WSJdir = U.getAnyFile("WSJ Directory", ".", JFileChooser.DIRECTORIES_ONLY)
         //File WSJdir = new File("/Users/charlesbean/Code/TEvA/Corpora/Converted/WSJ/Data")
-        if (!WSJdir.isDirectory()){
+        if (!WSJdir.isDirectory()) {
             println "Whoops! Not a directory"
-        }
-        else{
+        } else {
             new WSJImplementation(WSJdir)
         }
     }
